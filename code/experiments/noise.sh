@@ -7,7 +7,8 @@ german=(german 10.0 "59 20 20" "20 20 59" 59_20_20_20_59)
 health=(health 1.0 "110 20 20" "20 20 110" 110_20_20_20_110)
 lawschool=(lawschool 0.1 "37 20" "20 37" 37_20_37)
 
-for parameters in adult compas crime german health lawschool; do
+#for parameters in adult compas crime german health lawschool; do
+for parameters in adult compas german; do
   declare -n params="$parameters"
 
   dataset=${params[0]}
@@ -36,14 +37,20 @@ for parameters in adult compas crime german health lawschool; do
     --decoder-layers ${decoder_layers} \
     --constraint "GeneralCategorical(0.01, 0.3, [])" \
     --dl2-weight ${dl2_weight} --load-epoch 99 --adversarial --delta 0.01
+  # LCIFR data consumer BASELINE?
+  python train_classifier.py --dataset ${dataset} --load \
+    --encoder-layers ${encoder_layers} \
+    --decoder-layers ${decoder_layers} \
+    --constraint "GeneralCategorical(0.01, 0.3, [])" \
+    --dl2-weight 0 --load-epoch 99 --adversarial --delta 0.01
 
-  # certify baseline
-  python certify.py \
-    --models-dir "../../models/${dataset}/GeneralCategorical(0.01, 0.3, [])/${layers}/dl2_weight_0.0_learning_rate_0.001_weight_decay_0.01_balanced_False_patience_5_quantiles_False_dec_weight_0.0" \
-    --num-certify 1000 --complete --epoch 99 --load
-
-  # certify LCIFR
-  python certify.py \
-    --models-dir "../../models/${dataset}/GeneralCategorical(0.01, 0.3, [])/${layers}/dl2_weight_${dl2_weight}_learning_rate_0.001_weight_decay_0.01_balanced_False_patience_5_quantiles_False_dec_weight_0.0" \
-    --num-certify 1000 --complete --epoch 99 --load --adversarial
+#  # certify baseline
+#  python certify.py \
+#    --models-dir "../../models/${dataset}/GeneralCategorical(0.01, 0.3, [])/${layers}/dl2_weight_0.0_learning_rate_0.001_weight_decay_0.01_balanced_False_patience_5_quantiles_False_dec_weight_0.0" \
+#    --num-certify 1000 --complete --epoch 99 --load
+#
+#  # certify LCIFR
+#  python certify.py \
+#    --models-dir "../../models/${dataset}/GeneralCategorical(0.01, 0.3, [])/${layers}/dl2_weight_${dl2_weight}_learning_rate_0.001_weight_decay_0.01_balanced_False_patience_5_quantiles_False_dec_weight_0.0" \
+#    --num-certify 1000 --complete --epoch 99 --load --adversarial
 done

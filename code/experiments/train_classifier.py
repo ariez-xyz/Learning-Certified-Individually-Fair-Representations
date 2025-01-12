@@ -16,11 +16,14 @@ from experiments.args_factory import get_args
 from metrics import equalized_odds, statistical_parity
 from models import Autoencoder, LogisticRegression
 from utils import Statistics
+import csv
+import numpy as np
 
 args = get_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 project_root = path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
+preds_dir = path.join(project_root, '../predictions')
 base_dir = path.join(
     f'{args.dataset}', args.constraint,
     '_'.join([str(l) for l in args.encoder_layers + args.decoder_layers[1:]]),
@@ -83,7 +86,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 )
 
 
-def run(autoencoder, classifier, optimizer, loader, split):
+def run(autoencoder, classifier, optimizer, loader, split, savepreds=False):
     predictions, targets = list(), list()
     tot_ce_loss, tot_stat_par, tot_eq_odds = Statistics.get_stats(3)
 
@@ -195,3 +198,50 @@ for epoch in range(args.num_epochs):
     )
 
 writer.close()
+
+
+
+# After completing all epochs, evaluate on the combined dataset
+# Combine the train and validation datasets for evaluation
+combined_loader = torch.utils.data.DataLoader(
+    torch.utils.data.ConcatDataset([train_loader.dataset, val_loader.dataset]),
+    batch_size=args.batch_size, shuffle=False
+)
+
+# Print number of examples in combined, train, and val loader
+print(f'Number of examples in combined loader: {len(combined_loader.dataset)}')
+print(f'Number of examples in train loader: {len(train_loader.dataset)}')
+print(f'Number of examples in val loader: {len(val_loader.dataset)}')
+
+predictions, features_list = list(), list()
+
+autoencoder.eval()
+classifier.eval()
+
+with torch.no_grad():  # Disable gradient calculation for evaluation
+    for data_batch, _, _ in combined_loader:
+        data_batch = data_batch.to(device)
+        
+        latent_data = autoencoder.encode(data_batch)
+        logits = classifier(latent_data)
+        preds = classifier.predict(latent_data)
+        
+        predictions.extend(preds.cpu().numpy())
+        features_list.extend(data_batch.cpu().numpy())
+
+# Convert predictions and features to numpy arrays for easy manipulation
+predictions = np.array(predictions)
+features_array = np.array(features_list)
+
+# Combine predictions and features into one array
+csv_data = np.column_stack((predictions, features_array))
+
+# Save the combined data to a CSV file
+csv_file = path.join(preds_dir, f'predictions_{args.dataset}_dl2-{args.dl2_weight}.csv')
+with open(csv_file, 'w', newline='') as f:
+    writer = csv.writer(f)
+    # Optionally, write a header
+    header = ['Prediction'] + [f'Feature{i+1}' for i in range(features_array.shape[1])]
+    writer.writerow(header)
+    # Write data rows
+    writer.writerows(csv_data)

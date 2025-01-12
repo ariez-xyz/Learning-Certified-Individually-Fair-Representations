@@ -1,2 +1,2 @@
-conda activate lcifr
+micromamba activate lcifr
 export PYTHONPATH=$(pwd):$(pwd)/code

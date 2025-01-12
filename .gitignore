@@ -3,6 +3,7 @@
 /models
 /plots
 /results
+/micromamba
 
 .idea
 __pycache__
