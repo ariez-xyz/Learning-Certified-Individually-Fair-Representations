@@ -49,6 +49,13 @@ val_dataset = dataset('validation', args)
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=args.batch_size, shuffle=True
 )
+# Get the transformed feature names for saving as an interpretable csv
+feature_names = []
+for i in range(len(train_dataset.column_ids)):
+    for key, value in train_dataset.column_ids.items():
+        if value == i:
+            feature_names.append(key)
+print(feature_names)
 val_loader = torch.utils.data.DataLoader(
     val_dataset, batch_size=args.batch_size, shuffle=False
 )
@@ -241,7 +248,7 @@ csv_file = path.join(preds_dir, f'predictions_{args.dataset}_dl2-{args.dl2_weigh
 with open(csv_file, 'w', newline='') as f:
     writer = csv.writer(f)
     # Optionally, write a header
-    header = ['Prediction'] + [f'Feature{i+1}' for i in range(features_array.shape[1])]
+    header = ['Prediction'] + feature_names
     writer.writerow(header)
     # Write data rows
     writer.writerows(csv_data)
