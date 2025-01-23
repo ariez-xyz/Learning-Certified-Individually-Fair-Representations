@@ -20,6 +20,9 @@ class AdultDataset(AbstractDataset):
     def __init__(self, split, args, normalize=True):
         super().__init__('adult', split)
 
+        project_root = path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
+        preds_dir = path.join(project_root, '../predictions')
+
         train_data_file = path.join(self.data_dir, 'adult.data')
         test_data_file = path.join(self.data_dir, 'adult.test')
 
@@ -34,6 +37,10 @@ class AdultDataset(AbstractDataset):
 
         train_dataset = pd.read_csv(train_data_file, sep=',', header=None, names=AdultDataset.column_names)
         test_dataset = pd.read_csv(test_data_file, sep=',', header=0, names=AdultDataset.column_names)
+
+        # Shuffle before saving
+        train_dataset = train_dataset.sample(frac=1, random_state=42).reset_index(drop=True)
+        test_dataset = test_dataset.sample(frac=1, random_state=42).reset_index(drop=True)
 
         # preprocess strings
         train_dataset = train_dataset.applymap(lambda x: x.strip() if isinstance(x, str) else x)
@@ -52,6 +59,9 @@ class AdultDataset(AbstractDataset):
         # split features and labels
         train_features, train_labels = train_dataset.drop('income', axis=1), train_dataset['income']
         test_features, test_labels = test_dataset.drop('income', axis=1), test_dataset['income']
+
+        train_features.to_csv(path.join(preds_dir, 'train_features.csv'), index=False)
+        test_features.to_csv(path.join(preds_dir, 'test_features.csv'), index=False)
 
         continuous_vars = []
         self.categorical_columns = []
@@ -95,7 +105,7 @@ class AdultDataset(AbstractDataset):
         train_protected = torch.tensor(protected_train.astype(np.bool), device=self.device)
 
         self.X_train, self.X_val, self.y_train, self.y_val, self.protected_train, self.protected_val = train_test_split(
-            train_features, train_labels, train_protected, test_size=0.2, random_state=0
+            train_features, train_labels, train_protected, test_size=0.2, random_state=0, shuffle=False
         )
 
         self.X_test = torch.tensor(test_features.values.astype(np.float32), device=self.device)
