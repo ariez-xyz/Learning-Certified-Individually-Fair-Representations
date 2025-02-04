@@ -59,6 +59,10 @@ print(feature_names)
 val_loader = torch.utils.data.DataLoader(
     val_dataset, batch_size=args.batch_size, shuffle=False
 )
+test_dataset = dataset('test', args)
+test_loader = torch.utils.data.DataLoader(
+    test_dataset, batch_size=args.batch_size, shuffle=True
+)
 
 autoencoder = Autoencoder(args.encoder_layers, args.decoder_layers)
 classifier = LogisticRegression(args.encoder_layers[-1])
@@ -211,7 +215,7 @@ writer.close()
 # After completing all epochs, evaluate on the combined dataset
 # Combine the train and validation datasets for evaluation
 combined_loader = torch.utils.data.DataLoader(
-    torch.utils.data.ConcatDataset([train_loader.dataset, val_loader.dataset]),
+    torch.utils.data.ConcatDataset([train_loader.dataset, val_loader.dataset, test_loader.dataset]),
     batch_size=args.batch_size, shuffle=False
 )
 
@@ -219,6 +223,7 @@ combined_loader = torch.utils.data.DataLoader(
 print(f'Number of examples in combined loader: {len(combined_loader.dataset)}')
 print(f'Number of examples in train loader: {len(train_loader.dataset)}')
 print(f'Number of examples in val loader: {len(val_loader.dataset)}')
+print(f'Number of examples in test loader: {len(test_loader.dataset)}')
 
 predictions, features_list = list(), list()
 

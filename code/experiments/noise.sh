@@ -8,7 +8,7 @@ health=(health 1.0 "110 20 20" "20 20 110" 110_20_20_20_110)
 lawschool=(lawschool 0.1 "37 20" "20 37" 37_20_37)
 
 #for parameters in adult compas crime german health lawschool; do
-for parameters in adult compas german; do
+for parameters in compas german adult; do
   declare -n params="$parameters"
 
   dataset=${params[0]}
